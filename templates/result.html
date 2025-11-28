@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results - AI Question Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Add some inline styles for the table if style.css doesn't cover it */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25em 0.4em;
+            font-size: 75%;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.25rem;
+        }
+
+        .bg-warning {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .bg-info {
+            background-color: #0dcaf0;
+            color: #000;
+        }
+
+        .btn {
+            display: inline-block;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #212529;
+            text-align: center;
+            text-decoration: none;
+            vertical-align: middle;
+            cursor: pointer;
+            user-select: none;
+            background-color: transparent;
+            border: 1px solid transparent;
+            padding: 0.375rem 0.75rem;
+            font-size: 1rem;
+            border-radius: 0.25rem;
+            transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+        }
+
+        .btn-success {
+            color: #fff;
+            background-color: #198754;
+            border-color: #198754;
+        }
+
+        .btn-primary {
+            color: #fff;
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .mb-3 {
+            margin-bottom: 1rem;
+        }
+
+        .mt-3 {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <a href="{{ url_for('index') }}" class="back-link">← Back to Upload</a>
+            <h1>Generated Questions</h1>
+            <p class="subtitle">Results for: <strong>{{ filename }}</strong></p>
+        </header>
+
+        <main>
+            {% if json_file %}
+            <div class="mb-3" style="text-align: right;">
+                <a href="{{ url_for('download_file', filename=json_file) }}" class="btn btn-success">Download JSON
+                    Results</a>
+            </div>
+            {% endif %}
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Type</th>
+                            <th>Question</th>
+                            <th>Answer</th>
+                            <th>Location</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in results %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                {% if item.type == 'true_false' %}
+                                <span class="badge bg-warning">True/False</span>
+                                {% else %}
+                                <span class="badge bg-info">Short Answer</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.question }}</td>
+                            <td>{{ item.answer }}</td>
+                            <td>{{ item.location }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-3" style="text-align: center;">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">Upload Another File</a>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

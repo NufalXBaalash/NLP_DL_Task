@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Question Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Question Generator</h1>
+            <p class="subtitle">Upload a PDF or DOCX to generate questions automatically.</p>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                <div class="alert">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <div class="upload-card">
+                <form method="post" enctype="multipart/form-data" id="upload-form">
+                    <div class="drop-zone" id="drop-zone">
+                        <div class="icon">📄</div>
+                        <p>Drag & drop your file here or <span class="browse">browse</span></p>
+                        <input type="file" name="file" id="file-input" accept=".pdf,.docx" hidden>
+                        <p class="file-info" id="file-info"></p>
+                    </div>
+                    <button type="submit" class="btn-primary" id="generate-btn" disabled>Generate Questions</button>
+                </form>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="hidden">
+                <div class="spinner"></div>
+                <p>Generating questions, please wait...</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileInfo = document.getElementById('file-info');
+        const generateBtn = document.getElementById('generate-btn');
+        const uploadForm = document.getElementById('upload-form');
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                updateFileInfo();
+            }
+        });
+
+        fileInput.addEventListener('change', updateFileInfo);
+
+        function updateFileInfo() {
+            if (fileInput.files.length) {
+                fileInfo.textContent = `Selected: ${fileInput.files[0].name}`;
+                generateBtn.disabled = false;
+            } else {
+                fileInfo.textContent = '';
+                generateBtn.disabled = true;
+            }
+        }
+
+        uploadForm.addEventListener('submit', () => {
+            loadingOverlay.classList.remove('hidden');
+        });
+    </script>
+</body>
+
+</html>

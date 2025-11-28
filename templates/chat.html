@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Document Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .typing-indicator span {
+            animation: blink 1.4s infinite both;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 0.2;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.2;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-gray-100 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center z-10 shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z">
+                    </path>
+                </svg>
+            </div>
+            <h1 class="text-xl font-semibold tracking-tight">DocuChat AI</h1>
+        </div>
+        <button onclick="toggleSettings()" class="p-2 hover:bg-gray-700 rounded-full transition-colors">
+            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                </path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal"
+        class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div
+            class="bg-gray-800 p-6 rounded-xl shadow-2xl w-96 border border-gray-700 transform transition-all scale-100">
+            <h2 class="text-xl font-bold mb-4 text-white">Settings</h2>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-400 mb-2">OpenRouter API Key</label>
+                <input type="password" id="apiKeyInput"
+                    class="w-full bg-gray-900 border border-gray-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    placeholder="sk-or-...">
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="toggleSettings()"
+                    class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancel</button>
+                <button onclick="saveSettings()"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide scroll-smooth">
+        <!-- Welcome Message -->
+        <div class="flex justify-start">
+            <div class="bg-gray-800 rounded-2xl rounded-tl-none p-4 max-w-2xl border border-gray-700 shadow-sm">
+                <p class="text-gray-300">Hello! I'm your document assistant. Upload a PDF or DOCX file to get started.
+                    You can use commands like:</p>
+                <ul class="list-disc list-inside mt-2 text-gray-400 text-sm space-y-1">
+                    <li><code class="bg-gray-900 px-1 py-0.5 rounded text-blue-400">/questions</code> - Generate study
+                        questions</li>
+                    <li><code class="bg-gray-900 px-1 py-0.5 rounded text-blue-400">/summarize</code> - Summarize the
+                        document</li>
+                    <li><code class="bg-gray-900 px-1 py-0.5 rounded text-blue-400">/keyword</code> - Extract keywords
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="p-4 bg-gray-800 border-t border-gray-700">
+        <div
+            class="max-w-4xl mx-auto relative flex items-center bg-gray-900 rounded-xl border border-gray-600 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all shadow-lg">
+            <!-- File Upload -->
+            <label
+                class="p-3 cursor-pointer hover:text-blue-400 text-gray-400 transition-colors border-r border-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13">
+                    </path>
+                </svg>
+                <input type="file" id="fileInput" class="hidden" accept=".pdf,.docx" onchange="handleFileUpload(this)">
+            </label>
+
+            <!-- Text Input -->
+            <input type="text" id="messageInput"
+                class="flex-1 bg-transparent border-none focus:ring-0 text-white p-3 placeholder-gray-500"
+                placeholder="Type a command or message..." onkeypress="handleKeyPress(event)">
+
+            <!-- Send Button -->
+            <button onclick="sendMessage()" class="p-3 text-blue-500 hover:text-blue-400 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="fileNameDisplay" class="text-xs text-gray-500 mt-2 ml-2 hidden"></div>
+    </div>
+
+    <script>
+        let currentFile = null;
+
+        function toggleSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+        }
+
+        async function saveSettings() {
+            const apiKey = document.getElementById('apiKeyInput').value;
+            if (!apiKey) return;
+
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: apiKey })
+                });
+                if (response.ok) {
+                    toggleSettings();
+                    addMessage('system', 'API Key saved successfully.');
+                }
+            } catch (error) {
+                console.error('Error saving settings:', error);
+            }
+        }
+
+        function handleFileUpload(input) {
+            if (input.files && input.files[0]) {
+                currentFile = input.files[0];
+                const display = document.getElementById('fileNameDisplay');
+                display.textContent = `Selected: ${currentFile.name}`;
+                display.classList.remove('hidden');
+
+                // Automatically upload
+                uploadFile(currentFile);
+            }
+        }
+
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            addMessage('user', `Uploaded: ${file.name}`);
+            addMessage('system', 'Uploading and processing file...', true);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                removeLoading();
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addMessage('system', `File uploaded successfully! You can now use commands like /summarize, /questions, or /keyword.`);
+                } else {
+                    addMessage('system', 'Error uploading file.');
+                }
+            } catch (error) {
+                removeLoading();
+                addMessage('system', 'Error uploading file.');
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            input.value = '';
+            addMessage('user', message);
+
+            if (message.startsWith('/')) {
+                handleCommand(message);
+            } else {
+                addMessage('system', "I'm designed to process documents via commands. Try /summarize, /questions, or /keyword.");
+            }
+        }
+
+        async function handleCommand(command) {
+            addMessage('system', 'Processing command...', true);
+
+            const cmd = command.split(' ')[0].toLowerCase();
+            let endpoint = '';
+
+            if (cmd === '/summarize') endpoint = '/api/summarize';
+            else if (cmd === '/questions') endpoint = '/api/questions';
+            else if (cmd === '/keyword') endpoint = '/api/keyword';
+            else {
+                removeLoading();
+                addMessage('system', 'Unknown command.');
+                return;
+            }
+
+            try {
+                const response = await fetch(endpoint, { method: 'POST' });
+                removeLoading();
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (cmd === '/questions') {
+                        renderQuestions(data.result);
+                    } else {
+                        addMessage('bot', data.result);
+                    }
+                } else {
+                    const err = await response.json();
+                    addMessage('system', `Error: ${err.error || 'Something went wrong'}`);
+                }
+            } catch (error) {
+                removeLoading();
+                addMessage('system', 'Network error.');
+            }
+        }
+
+        function addMessage(type, content, isLoading = false) {
+            const container = document.getElementById('chatContainer');
+            const div = document.createElement('div');
+            div.className = `flex ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+
+            let innerHTML = '';
+            if (isLoading) {
+                div.id = 'loadingMessage';
+                innerHTML = `
+                    <div class="bg-gray-800 rounded-2xl rounded-tl-none p-4 border border-gray-700">
+                        <div class="typing-indicator flex space-x-1">
+                            <span class="w-2 h-2 bg-gray-500 rounded-full"></span>
+                            <span class="w-2 h-2 bg-gray-500 rounded-full"></span>
+                            <span class="w-2 h-2 bg-gray-500 rounded-full"></span>
+                        </div>
+                    </div>`;
+            } else {
+                const bgClass = type === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-gray-800 text-gray-300 rounded-tl-none border border-gray-700';
+                // Parse markdown for bot messages
+                const parsedContent = type === 'user' ? content : marked.parse(content);
+                innerHTML = `<div class="${bgClass} rounded-2xl p-4 max-w-2xl shadow-sm prose prose-invert prose-sm">${parsedContent}</div>`;
+            }
+
+            div.innerHTML = innerHTML;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function removeLoading() {
+            const loading = document.getElementById('loadingMessage');
+            if (loading) loading.remove();
+        }
+
+        function renderQuestions(questions) {
+            const container = document.getElementById('chatContainer');
+
+            questions.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-start mb-4';
+
+                const qId = `q-${index}`;
+                const aId = `a-${index}`;
+
+                div.innerHTML = `
+                    <div class="bg-gray-800 rounded-2xl rounded-tl-none p-4 max-w-2xl border border-gray-700 w-full shadow-sm">
+                        <div class="font-semibold text-blue-400 mb-2">Question ${index + 1} (${q.type})</div>
+                        <div class="text-gray-200 mb-3 text-lg">${q.question}</div>
+                        
+                        <div id="${aId}" class="hidden mt-3 p-3 bg-gray-900 rounded-lg border-l-4 border-green-500">
+                            <div class="text-xs text-gray-500 uppercase font-bold mb-1">Answer</div>
+                            <div class="text-gray-300">${q.answer}</div>
+                            <div class="text-xs text-gray-600 mt-2">Source: ${q.location}</div>
+                        </div>
+                        
+                        <button onclick="document.getElementById('${aId}').classList.toggle('hidden')" 
+                                class="mt-2 text-sm bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-md transition-colors flex items-center">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                            Show/Hide Answer
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>
